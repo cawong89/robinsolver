@@ -3,7 +3,8 @@
 By Christopher A. Wong
 
 This code solves the Helmholtz equation with variable potential on a rectangular domain based on
-the hierarchical Poincare-Steklov method. It is written in Fortran 2008.
+the hierarchical Poincare-Steklov method. It is written in Fortran 2008. This is purely a research
+code and likely has lots of issues stemming from bad practices.
 
 References:
 
@@ -94,9 +95,9 @@ This is done by declaring
     
 The derived type ELLIPTIC_RHS has the following attributes to be set:
 
-d       --- integer; Euclidean dimension of the problem
-f       --- pointer to a scalar function for the interior portion of the RHS
-g       --- TYPE(BNDRY_RHS), dimension(1:6)
+    d       --- integer; Euclidean dimension of the problem
+    f       --- pointer to a scalar function for the interior portion of the RHS
+    g       --- TYPE(BNDRY_RHS), dimension(1:6)
 
 Note that ELLIPTIC_RHS depends on a further subtype BNDRY_RHS(1:6). Each of the six elements of this
 array is itself a pointer to a scalar function indicating the boundary condition on each of the six
