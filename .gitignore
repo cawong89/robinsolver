@@ -1,1 +1,4 @@
 C++.gitignore
+*.mod
+*.o
+*.exe

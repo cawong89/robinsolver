@@ -1,13 +1,12 @@
 ! Standard compile lines:
 ! gfortran -march=native -O3 -c derived_type_module.f90 fd_module.f90 local_solver_module.f90 time_module.f90 robin_tree_module.f90 robin_output_module.f90
 !
-! gfortran -march=native -O3 -o output full_robin_test.f90 derived_type_module.o fd_module.o local_solver.o time_module.o robin_tree_module.o robin_output_module.o -L C:\OpenBLAS-v0.2.15-Win64-int32\lib -lopenblas
+! gfortran -march=native -O3 -o output test.f90 derived_type_module.o fd_module.o local_solver.o time_module.o robin_tree_module.o robin_output_module.o -L C:\OpenBLAS-v0.2.15-Win64-int32\lib -lopenblas
 
-program full_robin_test
+program test
 
     use derived_type_module
     use local_solver_module
-    use fd_module
     use robin_tree_module
     use robin_output_module
     
@@ -41,6 +40,8 @@ program full_robin_test
     
     ! Set boundary condition function
     
+    print *, dp
+    
     if (my_op%d == 2) then
         g(1)%g_face => zero2D
         g(2)%g_face => one2D
@@ -58,7 +59,7 @@ program full_robin_test
     end if
     
     ! Select opts
-    n = 1024
+    n = 128
     my_opts%h_tgt = 1.0d0/real(n,dp)
     my_opts%kb = 1.0d0
     my_opts%debug%txt_output = .false.
@@ -77,7 +78,7 @@ program full_robin_test
     
     
     ! Invoke elliptic solver
-    L = 12
+    L = 6
     call my_tree%factor(L,my_op, my_opts)
     call my_tree%solve(rhs)
     call my_tree%inspect()
@@ -93,15 +94,7 @@ program full_robin_test
     end if
     
     print *, 'Error: ', maxval(errors)
-    
-    
-    !
-    !print *, 'True h value: ', my_tree%opts%h
-
-    
-    
-    
-    
+  
     ! ! Write impedance matrices to file
     
     ! outputnode = 2
@@ -118,20 +111,6 @@ program full_robin_test
             ! imagpart(my_tree%node_list(outputnode)%ptr%RTR(rowout,3)%mat(j,:)), &
             ! imagpart(my_tree%node_list(outputnode)%ptr%RTR(rowout,4)%mat(j,:))
     ! end do    
-    
-    ! This requires using gfortran -fbackslash compiler option
-    ! write (*,"(A)",advance="no") "foo"
-    ! call sleep(1)
-    ! write (*,"(A)",advance="no") "\b\b\bbar"
-    ! call sleep(1)
-    ! write (*,"(A)",advance="no") "\b\b\bgee"
-    ! call sleep(1)
-    ! write (*,*)
-    
-    
-    
-    
-    !read *, read_in
     
     
     contains
@@ -321,4 +300,4 @@ program full_robin_test
     end function truesol_nonsym
 
 
-end program full_robin_test
+end program test

@@ -241,11 +241,11 @@ module fd_module
         type(elliptic_operator),            intent(in)      :: ell_op
         type(solve_opts),                   intent(inout)   :: opts
         complex(dp),    dimension(:,:), allocatable,    intent(out)     :: X
-		
+        
         integer     :: j
-		integer,	dimension(1:3)		:: grid_shape
+        integer,    dimension(1:3)        :: grid_shape
         integer     :: num_bndry
-		complex(dp),dimension(:,:),	allocatable	:: A
+        complex(dp),dimension(:,:),    allocatable    :: A
         
         ! lapack variables        
         integer     :: m, info
@@ -253,12 +253,12 @@ module fd_module
         
 
         
-		
-		! determine grid size, set in opts		
-		call get_h(opts%h, grid_shape, opts%h_tgt, ell_op%d, domain)
-		
-		! construct matrix
-		call FD_matrix(domain,grid_shape,ell_op,opts,A)
+        
+        ! determine grid size, set in opts        
+        call get_h(opts%h, grid_shape, opts%h_tgt, ell_op%d, domain)
+        
+        ! construct matrix
+        call FD_matrix(domain,grid_shape,ell_op,opts,A)
         
         
        
@@ -275,7 +275,7 @@ module fd_module
         do j = 1,ell_op%d      
             num_bndry = num_bndry + 2*product(grid_shape(1:ell_op%d)) / grid_shape(j)        
         end do
-		
+        
         allocate(X(1:size(A,1), 1:num_bndry))
         
         X = cmplx(0.0,0.0,dp)
@@ -283,8 +283,8 @@ module fd_module
             X(j,j) = cmplx(1.0,0.0,dp)
         end do
         
-		
-		! construct inverse to A; invoke LAPACK routines
+        
+        ! construct inverse to A; invoke LAPACK routines
         m = size(A,1)
         allocate(ipiv(1:m))
                
@@ -428,10 +428,10 @@ module fd_module
         
         integer :: j
 
-		
-		! build matrix
-		call FD_matrix(node%box,node%ptbox,ell_op,opts,A)
-        		
+        
+        ! build matrix
+        call FD_matrix(node%box,node%ptbox,ell_op,opts,A)
+                
         m = size(A,1)
         
         allocate(b(1:m,1:1))        
@@ -570,8 +570,8 @@ module fd_module
         integer :: face
         
         ! build matrix
-		call FD_matrix(node%box,node%ptbox,ell_op,opts,A)
-        		
+        call FD_matrix(node%box,node%ptbox,ell_op,opts,A)
+                
         m = size(A,1)
         
         allocate(b(1:m,1:1))        
