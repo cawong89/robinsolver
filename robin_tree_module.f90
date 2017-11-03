@@ -59,7 +59,7 @@ module robin_tree_module
         type(solve_opts)                        :: opts        ! options related to linear solver
         type(robin_tree_node),  pointer         :: root     ! Root node (whole domain)
         complex(dp),    dimension(1:2,1:2)      :: bndry_params ! bndry values and data 
-        logical                                    :: factored = .false. ! true if factoring complete
+        logical                                 :: factored = .false. ! true if factoring complete
         real(dp)                                :: f_time   ! Time (in sec) for factorization
         real(dp)                                :: s_time   ! Time (in sec) for linear solve
         
@@ -200,7 +200,7 @@ module robin_tree_module
 
         implicit none
 
-        class(robin_tree),              intent(inout)      :: T
+        class(robin_tree),              intent(inout)   :: T
         type(elliptic_rhs),             intent(in)      :: rhs
 
         
@@ -291,9 +291,9 @@ module robin_tree_module
 
         implicit none
 
-        type(robin_tree_node),  pointer,    intent(inout)    :: node
-        integer,                            intent(in)        :: maxlvl
-        integer,                            intent(in)        :: d
+        type(robin_tree_node),  pointer,    intent(inout)   :: node
+        integer,                            intent(in)      :: maxlvl
+        integer,                            intent(in)      :: d
         
         integer,    save    :: id_counter
         
@@ -378,7 +378,7 @@ module robin_tree_module
     
         implicit none
         
-        type(robin_tree),                        intent(inout)   :: T
+        type(robin_tree),                       intent(inout)   :: T
         type(robin_tree_node),                  intent(inout)   :: node
         
         real(dp),   dimension(1:3)      :: diffbox
