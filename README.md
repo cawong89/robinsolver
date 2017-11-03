@@ -57,9 +57,9 @@ To begin, first specify what MY_OPERATOR is. The derived type ELLIPTIC_OPERATOR 
 attributes to be set:
 
     d         --- integer; Euclidean dimension; must be d = 2 or 3
-    domain    --- real(8), dimension(1:2,1:3); The boundaries of the rectangular domain, written as [x1 y1 z1; x2 y2 z2]
+    domain    --- real double, dimension(1:2,1:3); The boundaries of the rectangular domain, written as [x1 y1 z1; x2 y2 z2]
     k         --- Pointer to complex-valued potential function
-    robin_coeff --- complex(16), dimension(1:6,1:2); Of the form [a1 a2; ... ]^T, for Robin condition* on each face: (a1*u + a2*u_n)
+    robin_coeff --- complex double, dimension(1:6,1:2); Of the form [a1 a2; ... ]^T, for Robin condition* on each face: (a1*u + a2*u_n)
 
 Next, we set the options. The main option to set is the discretizations. Currently not fully
 supported, but for finite differences you can set the grid size with
