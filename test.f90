@@ -59,7 +59,7 @@ program test
     end if
     
     ! Select opts
-    n = 1024
+    n = 128
     my_opts%h_tgt = 1.0d0/real(n,dp)
     my_opts%kb = 1.0d0
     my_opts%debug%txt_output = .false.
@@ -78,7 +78,7 @@ program test
     
     
     ! Invoke elliptic solver
-    L = 14
+    L = 6
     call my_tree%factor(L,my_op, my_opts)
     call my_tree%solve(rhs)
     call my_tree%inspect()
