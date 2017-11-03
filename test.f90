@@ -94,15 +94,7 @@ program test
     end if
     
     print *, 'Error: ', maxval(errors)
-    
-    
-    !
-    !print *, 'True h value: ', my_tree%opts%h
-
-    
-    
-    
-    
+  
     ! ! Write impedance matrices to file
     
     ! outputnode = 2
@@ -119,20 +111,6 @@ program test
             ! imagpart(my_tree%node_list(outputnode)%ptr%RTR(rowout,3)%mat(j,:)), &
             ! imagpart(my_tree%node_list(outputnode)%ptr%RTR(rowout,4)%mat(j,:))
     ! end do    
-    
-    ! This requires using gfortran -fbackslash compiler option
-    ! write (*,"(A)",advance="no") "foo"
-    ! call sleep(1)
-    ! write (*,"(A)",advance="no") "\b\b\bbar"
-    ! call sleep(1)
-    ! write (*,"(A)",advance="no") "\b\b\bgee"
-    ! call sleep(1)
-    ! write (*,*)
-    
-    
-    
-    
-    !read *, read_in
     
     
     contains
