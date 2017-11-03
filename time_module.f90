@@ -28,7 +28,7 @@ module time_module
         implicit none
         real(dp), intent(out) :: time
         
-        call system_clock(clock1)
+        call system_clock(clock1, count_rate = clockrate)
         time = real(clock1-clock0,dp) / real(clockrate,dp)
         
         write(*,'(A,ES10.2)') 'Seconds elapsed: ', time

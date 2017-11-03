@@ -26,8 +26,8 @@ in order:
     time_module.f90
     fd_module.f90
     local_solver_module.f90
-    robin_output_module.f90
     robin_tree_module.f90
+    robin_output_module.f90
     
 Your source file that invokes the elliptic solver must be linked to the above object files, as well
 as to BLAS.

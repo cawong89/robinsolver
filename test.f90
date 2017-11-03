@@ -1,4 +1,4 @@
-! Standard compile lines:
+! I compile with:
 ! gfortran -march=native -O3 -c derived_type_module.f90 fd_module.f90 local_solver_module.f90 time_module.f90 robin_tree_module.f90 robin_output_module.f90
 !
 ! gfortran -march=native -O3 -o output test.f90 derived_type_module.o fd_module.o local_solver.o time_module.o robin_tree_module.o robin_output_module.o -L C:\OpenBLAS-v0.2.15-Win64-int32\lib -lopenblas
@@ -59,7 +59,7 @@ program test
     end if
     
     ! Select opts
-    n = 128
+    n = 512
     my_opts%h_tgt = 1.0d0/real(n,dp)
     my_opts%kb = 1.0d0
     my_opts%debug%txt_output = .false.
@@ -78,7 +78,7 @@ program test
     
     
     ! Invoke elliptic solver
-    L = 6
+    L = 8
     call my_tree%factor(L,my_op, my_opts)
     call my_tree%solve(rhs)
     call my_tree%inspect()
