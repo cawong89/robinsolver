@@ -1,9 +1,9 @@
 ! Standard compile lines:
 ! gfortran -march=native -O3 -c derived_type_module.f90 fd_module.f90 local_solver_module.f90 time_module.f90 robin_tree_module.f90 robin_output_module.f90
 !
-! gfortran -march=native -O3 -o output full_robin_test.f90 derived_type_module.o fd_module.o local_solver.o time_module.o robin_tree_module.o robin_output_module.o -L C:\OpenBLAS-v0.2.15-Win64-int32\lib -lopenblas
+! gfortran -march=native -O3 -o output test.f90 derived_type_module.o fd_module.o local_solver.o time_module.o robin_tree_module.o robin_output_module.o -L C:\OpenBLAS-v0.2.15-Win64-int32\lib -lopenblas
 
-program full_robin_test
+program test
 
     use derived_type_module
     use local_solver_module
@@ -322,4 +322,4 @@ program full_robin_test
     end function truesol_nonsym
 
 
-end program full_robin_test
+end program test
