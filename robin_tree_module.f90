@@ -56,10 +56,10 @@ module robin_tree_module
 
         integer                                 :: nlvls    ! number of levels
         type(elliptic_operator)                 :: ell_op   ! associated elliptic operator
-		type(solve_opts)						:: opts		! options related to linear solver
+        type(solve_opts)                        :: opts        ! options related to linear solver
         type(robin_tree_node),  pointer         :: root     ! Root node (whole domain)
         complex(dp),    dimension(1:2,1:2)      :: bndry_params ! bndry values and data 
-		logical									:: factored = .false. ! true if factoring complete
+        logical                                    :: factored = .false. ! true if factoring complete
         real(dp)                                :: f_time   ! Time (in sec) for factorization
         real(dp)                                :: s_time   ! Time (in sec) for linear solve
         
@@ -150,18 +150,18 @@ module robin_tree_module
         T%root%node_id = 0
         T%root%lvl = 0
         T%root%isleaf = (0 == L)
-		T%root%parent => NULL()
-		
-		T%root%box = T%ell_op%domain
+        T%root%parent => NULL()
+        
+        T%root%box = T%ell_op%domain
         
         T%root%isbndry(1:2*T%ell_op%d) = .true.
 
-		call bin_tree(T%root,L,T%ell_op%d)
+        call bin_tree(T%root,L,T%ell_op%d)
         call node_id_ptr(T,T%root)
         
         write(*, '(A)') 'Domain partition completed.'
-		
-		! Begin RTR computation
+        
+        ! Begin RTR computation
         
         io_stat = .true.
         
@@ -170,7 +170,7 @@ module robin_tree_module
         write(*, '(A)') 'RTR computation completed.'
         
         ! Dev note: variable io_stat tracking routine error currently not passed to compute_RTR
-	
+    
 
         if (io_stat) then
             T%factored = .true.
@@ -208,15 +208,15 @@ module robin_tree_module
         
         ! ==========================================================
         ! Check conditions
-		if (.not. T%factored) then
-			stop 'Error: Robin Tree must be factored first.'
+        if (.not. T%factored) then
+            stop 'Error: Robin Tree must be factored first.'
         else if ( T%ell_op%d /= rhs%d ) then
             ! write(*,*) 'Error: Dimensions of Robin Tree and RHS do not match.'
             stop 'Error: Dimensions of Robin Tree and RHS do not match.'
         end if
-		
-		
-		! Forward and backward tree reversal for solution construction
+        
+        
+        ! Forward and backward tree reversal for solution construction
         
         write(*, '(A)') 'Commencing forward substitution...'
         
@@ -291,50 +291,50 @@ module robin_tree_module
 
         implicit none
 
-        type(robin_tree_node),  pointer,	intent(inout)	:: node
-		integer,							intent(in)		:: maxlvl
-		integer,							intent(in)		:: d
+        type(robin_tree_node),  pointer,    intent(inout)    :: node
+        integer,                            intent(in)        :: maxlvl
+        integer,                            intent(in)        :: d
         
         integer,    save    :: id_counter
         
         if (node%lvl == 0) then
             id_counter = 0
         end if
-		
-		
-		
-		! Terminate at leaf node
-		if ( node%isleaf .eqv. .true. ) then
-		
-			return
-			
-			
-		! otherwise construct children
-		else
-		
-			allocate(node%child1)
-			allocate(node%child2)
+        
+        
+        
+        ! Terminate at leaf node
+        if ( node%isleaf .eqv. .true. ) then
+        
+            return
+            
+            
+        ! otherwise construct children
+        else
+        
+            allocate(node%child1)
+            allocate(node%child2)
 
-			call node_divide(d,node)
-		
+            call node_divide(d,node)
+        
             id_counter = id_counter + 1
             node%child1%node_id = id_counter
-			node%child1%lvl = node%lvl + 1
-			node%child1%isleaf = (node%child1%lvl == maxlvl)
-			node%child1%parent => node
-			
-			
+            node%child1%lvl = node%lvl + 1
+            node%child1%isleaf = (node%child1%lvl == maxlvl)
+            node%child1%parent => node
+            
+            
             id_counter = id_counter + 1
             node%child2%node_id = id_counter
-			node%child2%lvl = node%lvl + 1
-			node%child2%isleaf = (node%child2%lvl == maxlvl)
-			node%child2%parent => node
+            node%child2%lvl = node%lvl + 1
+            node%child2%isleaf = (node%child2%lvl == maxlvl)
+            node%child2%parent => node
             
             
-            call bin_tree(node%child1,maxlvl,d)			
-			call bin_tree(node%child2,maxlvl,d)
-			
-		end if
+            call bin_tree(node%child1,maxlvl,d)            
+            call bin_tree(node%child2,maxlvl,d)
+            
+        end if
 
     end subroutine bin_tree
 
@@ -378,7 +378,7 @@ module robin_tree_module
     
         implicit none
         
-		type(robin_tree),						intent(inout)   :: T
+        type(robin_tree),                        intent(inout)   :: T
         type(robin_tree_node),                  intent(inout)   :: node
         
         real(dp),   dimension(1:3)      :: diffbox
@@ -426,8 +426,8 @@ module robin_tree_module
             call get_pt_face(pt_face,node%ptbox,T%ell_op%d)
 
                         
-			
-			! M-matrix block allocation
+            
+            ! M-matrix block allocation
             
             iface_size = size(node%child1%RtR(node%child1%iface,node%child1%iface)%mat,1)
             
@@ -1390,32 +1390,32 @@ module robin_tree_module
 !
 ! Notes: If two edges have equal length, the first one is chosen (in xyz order). d = 2 or 3
 
-	subroutine node_divide(d, node)
-	
-		implicit none
-		
-		integer,							intent(in)	    :: d
+    subroutine node_divide(d, node)
+    
+        implicit none
+        
+        integer,                            intent(in)        :: d
         type(robin_tree_node),              intent(inout)   :: node
-		
-		real(dp),	dimension(1:3)						:: widths
-		integer											:: j, edge
-		
-		widths = 0.0d0
+        
+        real(dp),    dimension(1:3)                        :: widths
+        integer                                            :: j, edge
+        
+        widths = 0.0d0
         
         widths(1:d) = node%box(2,1:d) - node%box(1,1:d)
-		
-		! do j = 1,d
-			! widths(j) = box_in(2,j) - box_in(1,j)
-		! end do
-		
+        
+        ! do j = 1,d
+            ! widths(j) = box_in(2,j) - box_in(1,j)
+        ! end do
+        
         ! Find index of longest direction, along which to cut
-		edge = maxloc(widths,1)
-		
-		node%child1%box = node%box
-		node%child2%box = node%box
-		
-		node%child1%box(2,edge) = node%box(1,edge) + widths(edge) * 0.5d0
-		node%child2%box(1,edge) = node%child1%box(2,edge)
+        edge = maxloc(widths,1)
+        
+        node%child1%box = node%box
+        node%child2%box = node%box
+        
+        node%child1%box(2,edge) = node%box(1,edge) + widths(edge) * 0.5d0
+        node%child2%box(1,edge) = node%child1%box(2,edge)
         
         ! Identify interface for each child
         node%child1%iface = 2*edge
@@ -1436,8 +1436,8 @@ module robin_tree_module
             end if
         end do
         
-		
-	end subroutine node_divide
+        
+    end subroutine node_divide
 
 ! =================================================================================================
 
