@@ -40,7 +40,6 @@ program test
     
     ! Set boundary condition function
     
-    print *, dp
     
     if (my_op%d == 2) then
         g(1)%g_face => zero2D
@@ -78,7 +77,7 @@ program test
     
     
     ! Invoke elliptic solver
-    L = 8
+    L = 12
     call my_tree%factor(L,my_op, my_opts)
     call my_tree%solve(rhs)
     call my_tree%inspect()
