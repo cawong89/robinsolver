@@ -29,9 +29,83 @@ program test
     
     integer                             :: n, L, j, jj, outputnode, rowout
     
+    type(matrixdata)    :: mtrx
+    complex(dp),    dimension(1:2,1:2)  :: A, Ainv
+    complex(dp),    dimension(1:2)      :: x, b
+    complex(dp),    dimension(1:2,1:1)  :: xx, bb
+    real    :: r, rr
+    
+    ! ! Construct a test matrix A
+    ! do j = 1,2
+        ! do jj = 1,2
+            ! call random_number(rr)
+            ! call random_number(r)
+            ! A(jj,j) = cmplx(rr, r, dp)
+        ! end do
+    ! end do
+    
+    ! ! Build explicit inverse
+    ! Ainv(1,1) = A(2,2)
+    ! Ainv(2,2) = A(1,1)
+    ! Ainv(1,2) = -A(1,2)
+    ! Ainv(2,1) = -A(2,1)
+    ! Ainv = Ainv / (A(1,1)*A(2,2) - A(1,2)*A(2,1))
+    
+    ! do j = 1,2
+        ! x(j) = cmplx(2*j, -j, dp)
+    ! end do
+    
+    ! xx(:,1) = x
+    
+    ! ! Create matrixdata type
+    ! call mtrx%set(A)
+    ! call mtrx%matvec(x, b, cmplx(1.0,0.0,dp), cmplx(0.0,0.0,dp))
+    ! bb(:,1) = b
+    ! print *, 'Original A'
+    ! print *, A
+    ! print *, 'Original Ainv'
+    ! print *, Ainv
+    ! print *, 'Original x'
+    ! print *, x
+    ! print *, 'Original b'
+    ! print *, matmul(A,x)
+    ! print *, 'Original Ainv*b'
+    ! print *, matmul(Ainv, b)
+    
+    
+    
+    ! print *, 'Matvec b'
+    ! print *, b
+    
+
+    
+    ! call mtrx%invvec(b = bb, beta = cmplx(1.0,0.0,dp), x = xx, alpha = cmplx(0.0,0.0,dp))
+    ! print *, 'Invvec x'
+    ! print *, xx(:,1)
+    
+    ! call mtrx%getinv(Ainv)
+    ! print *, 'Getinv'
+    ! print *, Ainv
+    
+    ! call mtrx%factor('LU')
+    
+    ! call mtrx%invvec(b = bb, beta = cmplx(1.0,0.0,dp), x = xx, alpha = cmplx(0.0,0.0,dp))
+    ! print *, 'Invvec LU x'
+    ! print *, xx(:,1)
+    
+    ! call mtrx%matvec(xx(:,1), b, cmplx(1.0,0.0,dp), cmplx(0.0,0.0,dp))
+    
+    ! print *, 'Matvec LU b'
+    ! print *, b
+    
+    ! call mtrx%getinv(Ainv)
+    ! print *, 'Getinv LU'
+    ! print *, Ainv
+    
+    
     
     ! Construct elliptic operator
-    my_op%d = 2
+    my_op%d = 3
     my_op%domain(:,1) = [0.0d0,1.0d0]
     my_op%domain(:,2) = [0.0d0,1.0d0]
     my_op%domain(:,3) = [0.0d0,1.0d0]
@@ -58,7 +132,7 @@ program test
     end if
     
     ! Select opts
-    n = 512
+    n = 64
     my_opts%h_tgt = 1.0d0/real(n,dp)
     my_opts%kb = 1.0d0
     my_opts%debug%txt_output = .false.

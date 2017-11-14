@@ -233,32 +233,28 @@ module fd_module
 ! Inverts the operator for an elliptic robin BVP on the rectangle using finite differences. Output
 ! is an allocated matrix X whose width is the size of the grid for the boundary of the rectangle.
 
-    subroutine FD_solve(domain, ell_op, opts, X)
+    subroutine FD_solve(node, ell_op, opts, X)
     
         implicit none
         
-        real(dp),   dimension(1:2,1:3),     intent(in)      :: domain
+        type(robin_tree_node),              intent(inout)   :: node
         type(elliptic_operator),            intent(in)      :: ell_op
         type(solve_opts),                   intent(inout)   :: opts
-        complex(dp),    dimension(:,:), allocatable,    intent(out)     :: X
+        complex(dp),    dimension(:,:), allocatable,    intent(out) :: X
         
         integer     :: j
         integer,    dimension(1:3)        :: grid_shape
         integer     :: num_bndry
         complex(dp),dimension(:,:),    allocatable    :: A
         
-        ! lapack variables        
-        integer     :: m, info
-        integer,    dimension(:),   allocatable :: ipiv
-        
 
         
         
         ! determine grid size, set in opts        
-        call get_h(opts%h, grid_shape, opts%h_tgt, ell_op%d, domain)
+        call get_h(opts%h, grid_shape, opts%h_tgt, ell_op%d, node%box)
         
         ! construct matrix
-        call FD_matrix(domain,grid_shape,ell_op,opts,A)
+        call FD_matrix(node%box,grid_shape,ell_op,opts,A)
         
         
        
@@ -283,18 +279,12 @@ module fd_module
             X(j,j) = cmplx(1.0,0.0,dp)
         end do
         
+        ! Construct matrix data structure for A, factor, and then apply
+        call node%LocalOp%set(A)
+        deallocate(A)
+        call node%LocalOp%factor('LU')
         
-        ! construct inverse to A; invoke LAPACK routines
-        m = size(A,1)
-        allocate(ipiv(1:m))
-               
-        !print *, 'Size of A:', size(A,1), size(A,2)
-        call zgesv(m, num_bndry, A, m, ipiv, X, m, info )
-        
-        ! display error if inversion fails
-        if (info /= 0) then
-            stop 'ZGETRI: INFO is nonzero.'
-        end if
+        call node%LocalOp%invvec(b = X, beta = cmplx(1.0,0.0,dp))
        
     
     end subroutine FD_solve
@@ -418,21 +408,16 @@ module fd_module
         type(solve_opts),                   intent(in)      :: opts
         procedure(scalar_proc), pointer,    intent(in)      :: f_rhs
         
-        complex(dp),    dimension(:,:), allocatable     :: A, b
+        complex(dp),    dimension(:,:), allocatable     :: b
         integer                                         :: bndry_size
-        integer                                         :: m, info
-        integer,        dimension(:),   allocatable     :: ipiv
+        integer                                         :: m
         integer,        dimension(1:3)                  :: grid_pt
         integer,        dimension(1:6)                  :: pt_face
         real(dp),       dimension(1:3)                  :: real_pt
         
         integer :: j
-
-        
-        ! build matrix
-        call FD_matrix(node%box,node%ptbox,ell_op,opts,A)
                 
-        m = size(A,1)
+        m = node%LocalOp%m
         
         allocate(b(1:m,1:1))        
         
@@ -457,15 +442,9 @@ module fd_module
             b(bndry_size+j,1) = f_rhs(real_pt)
         end do
         
-        ! Linear solve by LAPACK
-        allocate(ipiv(1:m))
-        call zgesv(m,1,A,m,ipiv,b,m,info)
+        ! Linear solve
+        call node%LocalOp%invvec(b = b, beta = cmplx(1.0,0.0,dp))
         node%sol(:) = b(:,1)
-        
-        if (info /= 0) then
-            print *, 'Error in ZGESV. INFO:', info
-            stop
-        end if
     
     end subroutine fd_leaf_solve
     
@@ -562,17 +541,13 @@ module fd_module
         type(elliptic_operator),            intent(in)      :: ell_op
         type(solve_opts),                   intent(in)      :: opts
         
-        complex(dp),    dimension(:,:),     allocatable :: A, b  
-        integer                                         :: m, bndry_size, info
-        integer,        dimension(:),       allocatable :: ipiv    
+        complex(dp),    dimension(:,:),     allocatable :: b  
+        integer                                         :: m, bndry_size    
         integer,        dimension(1:6)                  :: pt_face
 
         integer :: face
-        
-        ! build matrix
-        call FD_matrix(node%box,node%ptbox,ell_op,opts,A)
                 
-        m = size(A,1)
+        m = node%LocalOp%m
         
         allocate(b(1:m,1:1))        
         
@@ -596,14 +571,8 @@ module fd_module
         b(bndry_size+1:,1) = cmplx(0.0,0.0,dp)
         
         ! Perform linear solve
-        allocate(ipiv(1:m))
-        call zgesv(m,1,A,m,ipiv,b,m,info)
+        call node%LocalOp%invvec(b = b, beta = cmplx(1.0,0.0,dp))
         node%sol(:) = node%sol + b(:,1)
-        
-        if (info /= 0) then
-            print *, 'Error in ZGESV. INFO:', info
-            stop
-        end if
     
     
     end subroutine fd_leaf_update

@@ -2,3 +2,5 @@ C++.gitignore
 *.mod
 *.o
 *.exe
+*.smod
+test.f90

@@ -390,18 +390,8 @@ module robin_tree_module
         complex(dp),    dimension(:,:), allocatable :: C11,C12,C21,C22
         
         ! lapack variables        
-        integer     :: info, lwork
-        integer,    dimension(:),   allocatable ::  ipiv
-        complex(dp),dimension(:),   allocatable ::  work
+        integer     :: info
         
-        ! ! Determine which bndry face of the node is the interface
-        ! if ( associated( node%parent ) ) then
-            ! diffbox2 = abs(node%parent%box - node%box)
-                            
-            ! node%iface = f_idx(maxloc(maxval(diffbox2(:,1:T%ell_op%d),2),1), &
-                ! maxloc(maxval(diffbox2(:,1:T%ell_op%d),1),1))
-        ! end if
-
         ! Leaf computation: Compute RTR directly from local elliptic solve
         if ( node%isleaf ) then
         
@@ -438,13 +428,13 @@ module robin_tree_module
                 
             end if
             
-            ! Lapack block workspace allocation
-            lwork = max(64, iface_size)
-            allocate(work(1:lwork))
+            ! ! Lapack block workspace allocation
+            ! lwork = max(64, iface_size)
+            ! allocate(work(1:lwork))
             
             
-            allocate(node%D(1:iface_size, 1:iface_size), node%S(1:iface_size, 1:iface_size)   )
-            allocate(ipiv(1:iface_size))
+            ! allocate(node%D(1:iface_size, 1:iface_size), node%S(1:iface_size, 1:iface_size)   )
+            ! allocate(ipiv(1:iface_size))
             
             nu = (-T%bndry_params(1,1) * T%bndry_params(2,2) + & 
                 T%bndry_params(1,2) * T%bndry_params(2,1)) / &
@@ -456,35 +446,47 @@ module robin_tree_module
                 
             node%nu = nu
             
+           
                 
-            ! D matrix block inversion, D = inv(zeta * I - T^(2)_ii)
+            ! Set D matrix, D = (zeta * I - T^(2)_ii) and invert
+            ! Set S matrix, S = (zeta*I - T^(1)_ii - nu^2 * inv(D)) and invert
             
-            node%D = - node%child2%RtR(node%child2%iface,node%child2%iface)%mat
+            node%child2%RtR(node%child2%iface,node%child2%iface)%mat = &
+                - node%child2%RtR(node%child2%iface,node%child2%iface)%mat
             
             do j = 1, iface_size            
-                node%D(j,j) = node%D(j,j) + zeta            
+                node%child2%RtR(node%child2%iface,node%child2%iface)%mat(j,j) = &
+                    node%child2%RtR(node%child2%iface,node%child2%iface)%mat(j,j) + zeta            
             end do
-
-            
-            call zgetrf(iface_size, iface_size, node%D, iface_size, ipiv, info)
-
-
-            call zgetri(iface_size, node%D, iface_size, ipiv, work, lwork, info)
             
             
-            ! S matrix block inversion, S = inv(zeta*I - T^(1)_ii - nu^2 * D)
+            call node%D%set(node%child2%RtR(node%child2%iface,node%child2%iface)%mat)
+            call node%D%factor('LU')
             
-            node%S = - node%child1%RtR(node%child1%iface,node%child1%iface)%mat - &
-                (nu*nu) * node%D
+            
+            ! Explicitly construct inverse of D and overwrite T^(2)_ii
+            
+            call node%D%getinv(node%child2%RtR(node%child2%iface,node%child2%iface)%mat)
+            
+            node%child1%RtR(node%child1%iface,node%child1%iface)%mat = &
+                - node%child1%RtR(node%child1%iface,node%child1%iface)%mat - &
+                (nu*nu) * node%child2%RtR(node%child2%iface,node%child2%iface)%mat
             
             do j = 1, iface_size
-                node%S(j,j) = node%S(j,j) + zeta
+                node%child1%RtR(node%child1%iface,node%child1%iface)%mat(j,j) = &
+                    node%child1%RtR(node%child1%iface,node%child1%iface)%mat(j,j) + zeta
             end do
             
+            call node%S%set(node%child1%RtR(node%child1%iface,node%child1%iface)%mat)
+            call node%S%factor('LU')
             
-            call zgetrf(iface_size, iface_size, node%S, iface_size, ipiv, info)
-  
-            call zgetri(iface_size, node%S, iface_size, ipiv, work, lwork, info)
+            
+            
+            ! call node%D%getinv(node%child1%RtR(node%child1%iface,node%child1%iface)%mat)
+            ! print *, node%child1%RtR(node%child1%iface,node%child1%iface)%mat
+            
+            ! call node%S%getinv(node%child1%RtR(node%child1%iface,node%child1%iface)%mat)
+            ! print *, node%child1%RtR(node%child1%iface,node%child1%iface)%mat
             
             
             ! Deallocate T^(1)_ii and T^(2)_ii as they are no longer needed
@@ -508,18 +510,24 @@ module robin_tree_module
                 
                     ! Construct C11 = S * T^(1)_in2
                     allocate(C11(1:iface_size, 1:csize))
+                    
+                    call node%S%invvec(b = node%child1%RtR(node%child1%iface,col)%mat, &
+                                        beta = cmplx(1.0,0.0,dp), &
+                                        x = C11, alpha = cmplx(0.0,0.0,dp))
                         
-                    call zgemm('n', 'n', iface_size, csize, iface_size, & 
-                        cmplx(1.0,0.0,dp), node%S, &
-                        iface_size, node%child1%RtR(node%child1%iface,col)%mat, iface_size, &
-                        cmplx(0.0,0.0,dp), C11, iface_size)
+                    ! call zgemm('n', 'n', iface_size, csize, iface_size, & 
+                        ! cmplx(1.0,0.0,dp), node%S, &
+                        ! iface_size, node%child1%RtR(node%child1%iface,col)%mat, iface_size, &
+                        ! cmplx(0.0,0.0,dp), C11, iface_size)
                         
                     
-                    ! Construct C21 = nu * D * S * T^(1)_in2
+                    ! Construct C21 = nu * D * S * T^(1)_in2 = nu * D * C11
                     allocate(C21(1:iface_size, 1:csize))
+                    
+                    call node%D%invvec(b = C11, beta = nu, x = C21, alpha = cmplx(0.0,0.0,dp))
                         
-                    call zgemm('n', 'n', iface_size, csize, iface_size, nu, node%D, &
-                        iface_size, C11, iface_size, cmplx(0.0,0.0,dp), C21, iface_size) 
+                    ! call zgemm('n', 'n', iface_size, csize, iface_size, nu, node%D, &
+                        ! iface_size, C11, iface_size, cmplx(0.0,0.0,dp), C21, iface_size) 
 
                 end if
                 
@@ -533,24 +541,32 @@ module robin_tree_module
                     
                     allocate(C22(1:iface_size, 1:csize))
                     
-                    call zgemm('n', 'n', iface_size, csize, iface_size, &
-                        cmplx(1.0,0.0,dp), node%D, &
-                        iface_size, node%child2%RtR(node%child2%iface,col)%mat, iface_size, &
-                        cmplx(0.0,0.0,dp), C22, iface_size)
+                    call node%D%invvec(b = node%child2%RtR(node%child2%iface,col)%mat, &
+                                        beta = cmplx(1.0,0.0,dp), &
+                                        x = C22, alpha = cmplx(0.0,0.0,dp))
+                    
+                    ! call zgemm('n', 'n', iface_size, csize, iface_size, &
+                        ! cmplx(1.0,0.0,dp), node%D, &
+                        ! iface_size, node%child2%RtR(node%child2%iface,col)%mat, iface_size, &
+                        ! cmplx(0.0,0.0,dp), C22, iface_size)
                     
                     ! Construct C12 = nu * S * D * T^(2)_in2 = nu * S * C22
                     
                     allocate(C12(1:iface_size, 1:csize))
-                        
-                    call zgemm('n', 'n', iface_size, csize, iface_size, &
-                        nu, node%S, &
-                        iface_size, C22, iface_size, cmplx(0.0,0.0,dp), C12, iface_size)
-
-                    ! Construct C22 = (D + nu^2 * D*S*D) * T^(2)_in2 = C22 + nu*D*C12                    
                     
-                    call zgemm('n', 'n', iface_size, csize, iface_size, &
-                        nu, node%D, &
-                        iface_size, C12, iface_size, cmplx(1.0,0.0,dp), C22, iface_size) 
+                    call node%S%invvec(b = C22, beta = nu, x = C12, alpha = cmplx(0.0,0.0,dp))
+                        
+                    ! call zgemm('n', 'n', iface_size, csize, iface_size, &
+                        ! nu, node%S, &
+                        ! iface_size, C22, iface_size, cmplx(0.0,0.0,dp), C12, iface_size)
+
+                    ! Construct C22 = (D + nu^2 * D*S*D) * T^(2)_in2 = C22 + nu*D*C12
+
+                    call node%D%invvec(b = C12, beta = nu, x = C22, alpha = cmplx(1.0,0.0,dp))
+                    
+                    ! call zgemm('n', 'n', iface_size, csize, iface_size, &
+                        ! nu, node%D, &
+                        ! iface_size, C12, iface_size, cmplx(1.0,0.0,dp), C22, iface_size) 
                 
                 end if
 
@@ -769,8 +785,8 @@ module robin_tree_module
         
         call get_pt_face(pt_face, node%ptbox, ell_op%d)
         
-        ! invert elliptic operator
-        call elliptic_invert(node%box, ell_op, opts, X)
+        ! invert elliptic operator and store LU data for local operator
+        call elliptic_invert(node, ell_op, opts, X)
         
         if (.not. size_display) then
             write(*, '(A, I0, A, I0)') 'Size of matrix at leaf level: ', size(X,1), 'x', size(X,1)
@@ -1282,65 +1298,88 @@ module robin_tree_module
         complex(dp),    dimension(:),   intent(inout)   :: y1, y2
         complex(dp),    dimension(:),   intent(in)      :: x1, x2
         complex(dp),                    intent(in)      :: alpha
-        complex(dp),    dimension(:,:), intent(in)      :: D,S
+        type(matrixdata),               intent(in)      :: D,S
+        !complex(dp),    dimension(:,:), intent(in)      :: D,S
         complex(dp),                    intent(in)      :: nu
         
-        complex(dp),    dimension(:),   allocatable     :: interm, interm2 ! temp vector variables
+        complex(dp),    dimension(:,:),   allocatable   :: interm ! temp vector variables
+        complex(dp),    dimension(:,:),   allocatable   :: x1temp, x2temp, y1temp, y2temp
         
         
-        allocate(interm(1:size(x1,1)), interm2(1:size(x1,1)))
+        allocate(interm(1:size(x1,1),1))
+        
+        ! Initialize temporary arrays
+        allocate(x1temp(1:size(x1,1), 1))
+        allocate(x2temp(1:size(x1,1), 1))
+        allocate(y1temp(1:size(y1,1), 1))
+        allocate(y2temp(1:size(y2,1), 1))
+        x1temp(:,1) = x1
+        x2temp(:,1) = x2
+        y1temp(:,1) = y1
+        y2temp(:,1) = y2
         
         !interm = cmplx(0.0,0.0,dp) ! <--- Should not be necessary
         
         ! Step 1: interm <- S*x1
         
-        call zgemv('n', size(S,1), size(S,2), cmplx(1.0,0.0,dp), S, size(S,1), &
-                x1, 1, cmplx(0.0,0.0,dp), interm, 1)
+        call S%invvec(b = x1temp, beta = cmplx(1.0,0.0,dp), x = interm, alpha = cmplx(0.0,0.0,dp))
+        ! call zgemv('n', size(S,1), size(S,2), cmplx(1.0,0.0,dp), S, size(S,1), &
+                ! x1, 1, cmplx(0.0,0.0,dp), interm, 1)
 
                 
         ! Step 2: y1 <- alpha*y1 + interm = alpha*y1 + S*x1
         
-        y1 = alpha*y1 + interm
+        y1temp = alpha*y1temp + interm
 
         
         ! Step 3: y2 <- alpha*y2 - nu*D*interm = alpha*y2 - nu*D*S*x1
         
-        call zgemv('n', size(D,1), size(D,2), -nu, D, size(D,1), &
-                interm, 1, alpha, y2, 1)
+        call D%invvec(b = interm, beta = -nu, x = y2temp, alpha = alpha)
+        
+        ! call zgemv('n', size(D,1), size(D,2), -nu, D, size(D,1), &
+                ! interm, 1, alpha, y2, 1)
 
         
         ! Step 4: interm <- D*x2
+        
+        call D%invvec(b = x2temp, beta = cmplx(1.0,0.0,dp), x = interm, alpha = cmplx(0.0,0.0,dp))
             
-        call zgemv('n', size(D,1), size(D,2), cmplx(1.0,0.0,dp), D, size(D,1), &
-                x2, 1, cmplx(0.0,0.0,dp), interm, 1)
+        ! call zgemv('n', size(D,1), size(D,2), cmplx(1.0,0.0,dp), D, size(D,1), &
+                ! x2, 1, cmplx(0.0,0.0,dp), interm, 1)
 
                 
         ! Step 5: y2 <- y2 + interm = alpha*y2 - nu*D*S*x1 + D*x2
-        y2 = y2 + interm
+        y2temp = y2temp + interm
 
 
         ! Step 6: interm <- S*interm = S*D*x2
         
-        interm2 = interm
-        call zgemv('n', size(S,1), size(S,2), cmplx(1.0,0.0,dp), S, size(S,1), &
-                interm2, 1, cmplx(0.0,0.0,dp), interm, 1)
+        call S%invvec(b = interm, beta = cmplx(1.0,0.0,dp))
+        
+        ! interm2 = interm
+        ! call zgemv('n', size(S,1), size(S,2), cmplx(1.0,0.0,dp), S, size(S,1), &
+                ! interm2, 1, cmplx(0.0,0.0,dp), interm, 1)
 
                 
         ! Step 7: y1 <- y1 - nu*interm = alpha*x1 + S*x1 - nu*S*D*x2
         
-        y1 = y1 - nu*interm
+        y1temp = y1temp - nu*interm
 
 
                 
         ! Step 8: y2 <- y2 + nu^2*D*interm
         
-        call zgemv('n', size(D,1), size(D,2), nu*nu, D, size(D,1), &
-                interm, 1, cmplx(1.0,0.0,dp), y2, 1)
+        call D%invvec(b = interm, beta = nu*nu, x = y2temp, alpha = cmplx(1.0,0.0,dp))
+        
+        ! call zgemv('n', size(D,1), size(D,2), nu*nu, D, size(D,1), &
+                ! interm, 1, cmplx(1.0,0.0,dp), y2, 1)
 
+        ! Set outputs
+        y1 = y1temp(:,1)
+        y2 = y2temp(:,1)
                 
                 
-                
-        deallocate(interm, interm2) ! <--- Unnecessary in modern Fortran!
+        deallocate(interm, x1temp, x2temp, y1temp, y2temp) ! <--- Unnecessary in modern Fortran!
 
 
     end subroutine apply_invm

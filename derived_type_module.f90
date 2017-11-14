@@ -16,6 +16,8 @@ module derived_type_module
     public  :: coeff_proc, scalar_proc, sol_proc, elliptic_operator, robin_tree_node, &
                 elliptic_rhs, bndry_rhs, bndry_operator, bndry_vector, solve_opts
                 
+    public  :: matrixdata
+                
                 
                 
                 
@@ -50,6 +52,8 @@ module derived_type_module
     end interface
 
 ! =================================================================================================
+
+
 
 
 
@@ -146,6 +150,58 @@ module derived_type_module
 
 
 ! =================================================================================================
+! TYPE MATRIXDATA
+! Contains all the relevant data for a matrix, including all relevant factorization quantities as
+! as well as subroutines for inverting or applying the matrix.
+!
+!   Attributes:
+!
+!   factored            --- logical; determines if factorization data has been computed
+!   mode                --- type of factorization, such as 'LU', 'SVD', 'HSS'
+!   m,n                 --- size of original matrix is m x n
+!   A                   --- m x n matrix; a matrix with the same size as the original matrix
+!   rk                  --- integer; numerical rank of matrix (subject to some tolerance)
+!   ipiv                --- pivot data; used in LU factorization
+!
+!
+!   Type-bound Procedures:
+!
+!   set                 --- Takes an uninitialized matrixdata variable and sets its original matrix
+!   factor              --- constructs factorization according to mode
+!   matvec              --- applies the factored matrix to a vector
+!   invvec              --- applies the inverse matrix to a vector (i.e. solves linear system)
+!
+!   Dev note: May eventually want to give some components the PRIVATE attribute
+    
+    type matrixdata
+    
+        logical                                         :: factored = .false.
+        character(len=3)                                :: mode
+        integer                                         :: m,n = 0
+        complex(dp),    dimension(:,:), allocatable     :: A
+        
+        integer                                         :: rk = 0
+
+        integer,    dimension(:),   allocatable         :: ipiv
+        
+        contains
+        
+        procedure       :: set      => mtrx_set
+        procedure       :: factor   => mtrx_factor
+        procedure       :: getinv   => mtrx_getinv
+        procedure       :: matvec   => mtrx_matvec
+        procedure       :: matmat   => mtrx_matmat
+        procedure       :: invvec   => mtrx_invvec
+        
+
+    end type matrixdata
+! =================================================================================================
+
+
+
+
+
+! =================================================================================================
 ! TYPE ROBIN_TREE_NODE
 ! Derived type for every node of the Robin tree structure
 !
@@ -198,8 +254,11 @@ module derived_type_module
         integer                                     :: iface
         logical,                dimension(1:6)      :: isbndry = .false.
         
-        complex(dp),    dimension(:,:), allocatable ::  D,S ! Block data for inverse of M
+        type(matrixdata)                            :: D,S
+        !complex(dp),    dimension(:,:), allocatable ::  D,S ! Block data for inverse of M
         complex(dp)                                 ::  nu  ! parameter related to inverse of M
+        
+        type(matrixdata)                            :: LocalOp ! Leaf-local soln operator
         
         type(bndry_vector),             dimension(1:6)  :: g
         type(bndry_vector),             dimension(1:6)  :: h
@@ -244,6 +303,8 @@ module derived_type_module
 !   h           --- The true discretization used. Differs in each direction.
 !   ordering    --- Specify ordering scheme.
 !   disc        --- Specify discretization type. 'fd' = finite diff
+!   local_mode  --- Factorization mode for leaf-level matrices
+!   R_mode      --- Factorization mode for blocks of RtR matrices
 !   kb          --- k parameter for boundary condition in Robin elliptic BVP.
 !   debug       --- Debug options derived type.
     type solve_opts
@@ -252,13 +313,80 @@ module derived_type_module
         real(dp),   dimension(1:3)  :: h
         integer                     :: ordering = 1
         character(len=2)            :: disc = 'fd'
+        character(len=3)            :: local_mode = 'LU'
+        character(len=3)            :: R_mode = 'LU'
         real(dp)                    :: kb = 1.0d0
         type(debug_opts)            :: debug
     
     end type solve_opts
 
 ! =================================================================================================
+ 
 
+
+
+
+! =================================================================================================
+! Factorization module interface
+    interface
+    
+        module subroutine mtrx_set(mtrx, A)
+        
+            class(matrixdata),                  intent(out) :: mtrx
+            complex(dp),        dimension(:,:), intent(in)  :: A
+        
+        end subroutine mtrx_set
+              
+        
+        module subroutine mtrx_factor(mtrx, mode)
+        
+            class(matrixdata),  intent(inout)   :: mtrx
+            character(len=*),   intent(in)      :: mode
+        
+        end subroutine mtrx_factor
+        
+        
+        module subroutine mtrx_getinv(mtrx,InvA)
+        
+            class(matrixdata),                  intent(in)  :: mtrx
+            complex(dp),        dimension(:,:), intent(out) :: InvA
+            
+        end subroutine mtrx_getinv
+        
+        
+        module subroutine mtrx_matvec(mtrx, x, y, alpha, beta)
+        
+            class(matrixdata),                      intent(in)      :: mtrx
+            complex(dp),        dimension(:),       intent(in)      :: x
+            complex(dp),        dimension(:),       intent(inout)   :: y
+            complex(dp),                            intent(in)      :: alpha, beta
+        
+        end subroutine mtrx_matvec
+        
+        
+        module subroutine mtrx_matmat(mtrx, B, C, alpha, beta)
+        
+            class(matrixdata),                      intent(in)      :: mtrx
+            complex(dp),        dimension(:,:),     intent(in)      :: B
+            complex(dp),        dimension(:,:),     intent(inout)   :: C
+            complex(dp),                            intent(in)      :: alpha, beta
+        
+        end subroutine mtrx_matmat
+        
+        
+        module subroutine mtrx_invvec(mtrx, b, beta, x, alpha)
+        
+            class(matrixdata),                      intent(in)      :: mtrx
+            complex(dp),        dimension(:,:),     intent(inout)   :: b
+            complex(dp),                            intent(in)      :: beta
+            complex(dp),        dimension(:,:),     intent(inout),  optional    :: x
+            complex(dp),                            intent(in),     optional    :: alpha
+        
+        end subroutine mtrx_invvec
+        
+    
+    end interface
+! =================================================================================================
 
 
     contains

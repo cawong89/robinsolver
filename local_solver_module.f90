@@ -76,17 +76,17 @@ module local_solver_module
 !               i*kb*u + u_n = g
 ! Interfaces with different elliptic solvers.
 
-    subroutine elliptic_invert(domain, ell_op, opts, X)
+    subroutine elliptic_invert(node, ell_op, opts, X)
     
         implicit none
         
-        real(dp),   dimension(1:2,1:3),     intent(in)      :: domain
+        type(robin_tree_node),              intent(inout)   :: node
         type(elliptic_operator),            intent(in)      :: ell_op
         type(solve_opts),                   intent(inout)   :: opts
-        complex(dp),    dimension(:,:), allocatable,    intent(out)     :: X
+        complex(dp),    dimension(:,:), allocatable,    intent(out) :: X
         
         if (opts%disc == 'fd') then
-            call FD_solve(domain, ell_op, opts, X)
+            call FD_solve(node, ell_op, opts, X)
         else
             stop 'Error in ELLIPTIC_INVERT: Other discretizations not currently supported.'
         end if
