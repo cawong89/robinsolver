@@ -109,7 +109,7 @@ module derived_type_module
     type elliptic_rhs
     
         integer                         :: d            ! Euclidean dimension; must be d = 2 or 3
-		procedure(scalar_proc), pointer,    nopass  :: f! RHS Scalar function for interior operator
+        procedure(scalar_proc), pointer,    nopass  :: f! RHS Scalar function for interior operator
         type(bndry_rhs),    dimension(1:6)  :: g        ! 
 
     end type elliptic_rhs
@@ -255,7 +255,6 @@ module derived_type_module
         logical,                dimension(1:6)      :: isbndry = .false.
         
         type(matrixdata)                            :: D,S
-        !complex(dp),    dimension(:,:), allocatable ::  D,S ! Block data for inverse of M
         complex(dp)                                 ::  nu  ! parameter related to inverse of M
         
         type(matrixdata)                            :: LocalOp ! Leaf-local soln operator

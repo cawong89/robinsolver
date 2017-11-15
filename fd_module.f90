@@ -137,8 +137,6 @@ module fd_module
         
         call grid_classify(dist, f_nbr, grid_pt, grid_shape, d)
         
-        !print *, eval_pt, 'coord :', grid_pt, 'f_nbr :', f_nbr
-        
         ! Interior stencil
         ! Enforce differential condition Au = f
         if (dist > 0) then
@@ -255,16 +253,6 @@ module fd_module
         
         ! construct matrix
         call FD_matrix(node%box,grid_shape,ell_op,opts,A)
-        
-        
-       
-        ! ! DEBUG: WRITE A TO FILE
-        ! open(unit = 1, file = "A_out_real.txt", action = "write", status = "replace")
-        ! open(unit = 2, file = "A_out_imag.txt", action = "write", status = "replace")
-        ! do j = 1, size(A,1)
-            ! write(1,*) real(A(j,:))
-            ! write(2,*) imag(A(j,:))
-        ! end do
         
         ! allocate and set X        
         num_bndry = 0
@@ -604,8 +592,6 @@ module fd_module
         
         do j = 1,2*d
             if (.not. allocated(bndry_vec(j)%vec)) then
-                !print *, 'Allocating at face :', j
-                !print *, 'Vector size :', pt_face(j)
                 allocate(bndry_vec(j)%vec(1:pt_face(j)))
             end if
         end do
@@ -888,7 +874,6 @@ module fd_module
         integer,                        intent(in)  :: d
         type(solve_opts),               intent(in)  :: opts
         
-        integer :: j
         integer,    dimension(1:6)  :: pt_face
         integer :: bndry_size
         integer,    dimension(1:3)  :: bndry_shape
@@ -1033,29 +1018,6 @@ module fd_module
         
         end if
         
-        
-        
-        ! if (dist == 1) then
-        
-            ! do j = 1,d            
-                ! if (grid_pt(j) == 1) then                
-                    ! f_neighbor(j) = 2*j - 1              
-                ! else if (grid_pt(j) == grid_shape(j)) then                
-                    ! f_neighbor(j) = 2*j                
-                ! end if            
-            ! end do
-            
-        ! else if (dist == 0) then
-        
-            ! do j = 1,d
-                ! if (grid_pt(j) == 0) then
-                    ! f_neighbor(j) = 2*j - 1
-                ! else if (grid_pt(j) == grid_shape(j) + 1) then
-                    ! f_neighbor(j) = 2*j
-                ! end if
-            ! end do
-        
-        ! end if
     
     end subroutine grid_classify
 

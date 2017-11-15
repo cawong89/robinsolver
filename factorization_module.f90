@@ -10,14 +10,7 @@
 
 submodule (derived_type_module) factorization_module
 
-    ! implicit none
-    ! private
-    
-    ! integer,    parameter   :: dp = kind(1.0d0) ! double precision kind specification
-    
-    ! public  :: numrank, numrankQR
-
-    
+  
     
     
     contains
@@ -160,7 +153,6 @@ submodule (derived_type_module) factorization_module
     
         implicit none
         complex(dp),    dimension(:),   allocatable :: vec_temp
-        integer :: j
         
         ! Check dimensions match
         if (.not. ( (size(y) == mtrx%m) .and. (size(x) == mtrx%n) ) ) then
@@ -302,7 +294,6 @@ submodule (derived_type_module) factorization_module
         complex(dp),    dimension(:,:), allocatable     :: mat_temp, x_temp    
         integer                                         :: nrhs, info
         integer,        dimension(:),   allocatable     :: ipiv
-        character(len=1)                                :: LR
         
         ! Check dimensions match
         if (.not. (size(b,1) == mtrx%m )) then
@@ -447,6 +438,7 @@ submodule (derived_type_module) factorization_module
         integer,                        intent(out)     :: rank
         complex(dp),    dimension(:,:), intent(in)      :: A
         real(dp),                       intent(in)      :: tol
+        
         
 
     end subroutine numrankqr

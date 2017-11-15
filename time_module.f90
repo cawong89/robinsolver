@@ -9,7 +9,7 @@ module time_module
     private
     
     integer,    parameter   :: dp = kind(1.0d0) !   
-    integer                 :: clock0, clock1, clockrate, ticks
+    integer                 :: clock0, clock1, clockrate
     
     public  :: start_clock, read_clock
     

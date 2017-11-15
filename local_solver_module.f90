@@ -104,7 +104,7 @@ module local_solver_module
 !
 ! This subroutine is only used as a debug tool for ELLIPTIC_INVERT.
 
-    subroutine elliptic_apply(domain, ell_op, opts, X, g, u, u_true)
+    subroutine elliptic_apply(domain, ell_op, opts, X, g, u)
     
         implicit none
         
@@ -116,18 +116,12 @@ module local_solver_module
         
         complex(dp),    dimension(:),   allocatable,    intent(out) :: u
         
-        complex(dp),    dimension(:),                   intent(in)  :: u_true
-        
-        integer,    dimension(1:3)  :: grid_shape, grid_shape2, grid_idx
+        integer,    dimension(1:3)  :: grid_shape, grid_idx
         real(dp),   dimension(1:3)  :: real_pt, face_real_pt
-        real(dp),   dimension(1:2,1:3)  :: domain2
         integer,    dimension(1:6)  :: pt_face
         complex(dp),    dimension(:),   allocatable :: bndry_vec
         integer :: bndry_size
-        integer :: j, pt
-        
-        ! complex(dp),    dimension(:,:), allocatable :: A
-        ! complex(dp),    dimension(:),   allocatable :: Au
+        integer :: j
         
         if (opts%disc == 'fd') then
             ! reproduce grid shape
@@ -156,28 +150,6 @@ module local_solver_module
             
             ! construct vector of boundary values from boundary function g
             allocate(bndry_vec(1:bndry_size))
-            
-            
-            ! do j = 1, 2*ell_op%d
-                ! ! set grid_shape of boundary
-                ! grid_shape2(1:(j-1)/2) = grid_shape(1:(j-1)/2)
-                ! grid_shape2((j+1)/2:ell_op%d) = grid_shape((j+3)/2:)
-                ! ! set real (x,y) boundaries of the boundary face
-                ! domain2(:,1:(j-1)/2) = domain(:,1:(j-1)/2)
-                ! domain2(:,(j+1)/2:ell_op%d) = domain(:,(j+3)/2:)
-                
-                ! do pt = 1,pt_face(j)
-                    
-                    ! ! Evaluate boundary function at each point
-                    ! call lin2igrid(pt, grid_idx, grid_shape2, ell_op%d - 1, opts)
-                    ! call grid2real(real_pt, grid_idx, grid_shape2, ell_op%d-1, opts, domain2)
-                    
-                    ! print *, grid_idx
-                    ! print *, real_pt
-                    
-                    ! bndry_vec(sum(pt_face(1:(j-1)))+pt) = g(j)%g_face(real_pt)
-                ! end do
-            ! end do
             
             do j = 1, bndry_size
             
@@ -220,7 +192,6 @@ module local_solver_module
                     
                 end if
 
-            !print *, j, 'value :', bndry_vec(j)
             
             end do
             
@@ -229,26 +200,6 @@ module local_solver_module
             call zgemv('n',size(X,1),bndry_size,cmplx(1.0,0.0,dp),X,size(X,1),bndry_vec,1, cmplx(0.0,0.0,dp) ,u,1)
             
             print *, 'Solution produced. Vector size: ', size(u)
-            
-            ! ! Compute residual
-            ! call FD_matrix(domain,grid_shape,ell_op,opts,A)
-            ! call zgemv('n',size(A,1),size(A,2),cmplx(1.0,0.0,dp),A,size(A,1),u,1, cmplx(0.0,0.0,dp) ,Au,1)
-            
-            ! print *, 'Residual: ', max(maxval(abs(bndry_vec - Au(1:bndry_size))),maxval(abs(Au(bndry_size+1:)))) 
-            
-            ! ! True solution residual
-            
-            ! call zgemv('n',size(A,1),size(A,2),cmplx(1.0,0.0,dp),A,size(A,1),u_true,1, cmplx(0.0,0.0,dp) ,Au,1)
-            
-            ! do j = 1, bndry_size
-            
-                ! print *, 'Pt: ', j, 'Diff: ', abs(Au(j) - bndry_vec(j))
-                ! print *, 'Au: ', Au(j), 'g: ', bndry_vec(j)
-            
-            
-            ! end do
-            
-            !print *, 'True sol residual: ', max(maxval(abs(bndry_vec - Au(1:bndry_size))),maxval(abs(Au(bndry_size+1:)))) 
             
             
         else

@@ -98,7 +98,7 @@ module robin_output_module
         
         complex(dp),    dimension(:),   allocatable :: u_exact
         
-        integer :: j, jj
+        integer :: j
         
         ! Allocate error_vec
         allocate(error_vec(1:size(leaf_sol)))
@@ -130,21 +130,6 @@ module robin_output_module
                 end if
             
             end if
-            
-            
-            
-            ! if (j == 1 ) then
-
-                ! open(unit = 1, file = "u_comp_leaf.txt", action = "write", status = "replace")
-                ! open(unit = 2, file = "u_true_leaf.txt", action = "write", status = "replace")
-            
-                ! do jj = 1, size(u_exact)
-                    ! write(1,*) leaf_sol(1)%u(jj)
-                    ! write(2,*) u_exact(jj)
-                
-                ! end do
-            
-            ! end if
         
         end do
         

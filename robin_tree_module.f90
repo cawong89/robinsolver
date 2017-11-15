@@ -17,7 +17,7 @@
 !
 !
 ! Author: Christopher A. Wong
-! Date: 26 October 2017
+! Date: 15 November 2017
 ! Standard: Fortran 2008
 
 module robin_tree_module
@@ -105,7 +105,6 @@ module robin_tree_module
         real(dp),   dimension(1:L)  :: lvl_mem  ! this array estimates bytes of memory per level
         real(dp),   parameter       :: min_det = (10.0)**(-3.0) ! min det for bndry_params matrix
         
-        integer :: j
         logical :: io_stat
         character(len=6)    :: mem_char, lvl_char
 
@@ -211,7 +210,6 @@ module robin_tree_module
         if (.not. T%factored) then
             stop 'Error: Robin Tree must be factored first.'
         else if ( T%ell_op%d /= rhs%d ) then
-            ! write(*,*) 'Error: Dimensions of Robin Tree and RHS do not match.'
             stop 'Error: Dimensions of Robin Tree and RHS do not match.'
         end if
         
@@ -382,15 +380,11 @@ module robin_tree_module
         type(robin_tree_node),                  intent(inout)   :: node
         
         real(dp),   dimension(1:3)      :: diffbox
-        real(dp),   dimension(1:2,1:3)  :: diffbox2
         integer,    dimension(1:6)      :: pt_face
         complex(dp) :: zeta, nu
         integer :: iface_size, rsize, csize
         integer :: j, row,col
         complex(dp),    dimension(:,:), allocatable :: C11,C12,C21,C22
-        
-        ! lapack variables        
-        integer     :: info
         
         ! Leaf computation: Compute RTR directly from local elliptic solve
         if ( node%isleaf ) then
@@ -427,14 +421,6 @@ module robin_tree_module
                 stop 'Error: Interface sizes of node children do not match'
                 
             end if
-            
-            ! ! Lapack block workspace allocation
-            ! lwork = max(64, iface_size)
-            ! allocate(work(1:lwork))
-            
-            
-            ! allocate(node%D(1:iface_size, 1:iface_size), node%S(1:iface_size, 1:iface_size)   )
-            ! allocate(ipiv(1:iface_size))
             
             nu = (-T%bndry_params(1,1) * T%bndry_params(2,2) + & 
                 T%bndry_params(1,2) * T%bndry_params(2,1)) / &
@@ -479,14 +465,7 @@ module robin_tree_module
             
             call node%S%set(node%child1%RtR(node%child1%iface,node%child1%iface)%mat)
             call node%S%factor('LU')
-            
-            
-            
-            ! call node%D%getinv(node%child1%RtR(node%child1%iface,node%child1%iface)%mat)
-            ! print *, node%child1%RtR(node%child1%iface,node%child1%iface)%mat
-            
-            ! call node%S%getinv(node%child1%RtR(node%child1%iface,node%child1%iface)%mat)
-            ! print *, node%child1%RtR(node%child1%iface,node%child1%iface)%mat
+
             
             
             ! Deallocate T^(1)_ii and T^(2)_ii as they are no longer needed
@@ -515,19 +494,13 @@ module robin_tree_module
                                         beta = cmplx(1.0,0.0,dp), &
                                         x = C11, alpha = cmplx(0.0,0.0,dp))
                         
-                    ! call zgemm('n', 'n', iface_size, csize, iface_size, & 
-                        ! cmplx(1.0,0.0,dp), node%S, &
-                        ! iface_size, node%child1%RtR(node%child1%iface,col)%mat, iface_size, &
-                        ! cmplx(0.0,0.0,dp), C11, iface_size)
                         
                     
                     ! Construct C21 = nu * D * S * T^(1)_in2 = nu * D * C11
                     allocate(C21(1:iface_size, 1:csize))
                     
                     call node%D%invvec(b = C11, beta = nu, x = C21, alpha = cmplx(0.0,0.0,dp))
-                        
-                    ! call zgemm('n', 'n', iface_size, csize, iface_size, nu, node%D, &
-                        ! iface_size, C11, iface_size, cmplx(0.0,0.0,dp), C21, iface_size) 
+
 
                 end if
                 
@@ -544,29 +517,19 @@ module robin_tree_module
                     call node%D%invvec(b = node%child2%RtR(node%child2%iface,col)%mat, &
                                         beta = cmplx(1.0,0.0,dp), &
                                         x = C22, alpha = cmplx(0.0,0.0,dp))
-                    
-                    ! call zgemm('n', 'n', iface_size, csize, iface_size, &
-                        ! cmplx(1.0,0.0,dp), node%D, &
-                        ! iface_size, node%child2%RtR(node%child2%iface,col)%mat, iface_size, &
-                        ! cmplx(0.0,0.0,dp), C22, iface_size)
+
                     
                     ! Construct C12 = nu * S * D * T^(2)_in2 = nu * S * C22
                     
                     allocate(C12(1:iface_size, 1:csize))
                     
                     call node%S%invvec(b = C22, beta = nu, x = C12, alpha = cmplx(0.0,0.0,dp))
-                        
-                    ! call zgemm('n', 'n', iface_size, csize, iface_size, &
-                        ! nu, node%S, &
-                        ! iface_size, C22, iface_size, cmplx(0.0,0.0,dp), C12, iface_size)
+
 
                     ! Construct C22 = (D + nu^2 * D*S*D) * T^(2)_in2 = C22 + nu*D*C12
 
                     call node%D%invvec(b = C12, beta = nu, x = C22, alpha = cmplx(1.0,0.0,dp))
-                    
-                    ! call zgemm('n', 'n', iface_size, csize, iface_size, &
-                        ! nu, node%D, &
-                        ! iface_size, C12, iface_size, cmplx(1.0,0.0,dp), C22, iface_size) 
+
                 
                 end if
 
@@ -715,7 +678,6 @@ module robin_tree_module
         logical :: io_stat
         integer,    dimension(1:3)  :: shift
         complex(dp) :: sigma, tau
-        integer :: j
         integer :: row1, row2, n_direction
         
         sigma = cmplx(0.0,-1.0,dp) * opts%kb
@@ -799,7 +761,6 @@ module robin_tree_module
         ! then must be copied to array blocks in node%RtR
         
         ! dev note: This method only uses the finite differences discretization!!!
-        ! dev note: Might be something wrong with this calculation here!
          
         do col = 1, size(X,2)
         do face = 1, 2*ell_op%d
@@ -1053,7 +1014,6 @@ module robin_tree_module
         logical,    save    :: bndry_set = .false.    ! Flag for if boundary conditions have been applied
         
         integer :: face
-        integer :: j   ! <--- only used in debug
         
         ! The first time routine is called, apply boundary conditions to populate g data for all
         ! faces on the full domain boundary (for nodes at all levels)
@@ -1061,10 +1021,7 @@ module robin_tree_module
         if (.not. bndry_set) then
             
             write(*, '(A)') 'Applying boundary conditions...'
-            
-            ! ! DEV NOTE: THIS ROUTINE DOESN'T RESPECT THE PARTITIONED INDEXING!!!!
-            ! call make_bndry_vec(node%g, node, rhs%g, T%ell_op%d, T%opts)
-            
+
             call apply_bc(T, T%root, rhs)
             
             bndry_set = .true.
@@ -1299,7 +1256,6 @@ module robin_tree_module
         complex(dp),    dimension(:),   intent(in)      :: x1, x2
         complex(dp),                    intent(in)      :: alpha
         type(matrixdata),               intent(in)      :: D,S
-        !complex(dp),    dimension(:,:), intent(in)      :: D,S
         complex(dp),                    intent(in)      :: nu
         
         complex(dp),    dimension(:,:),   allocatable   :: interm ! temp vector variables
@@ -1323,9 +1279,6 @@ module robin_tree_module
         ! Step 1: interm <- S*x1
         
         call S%invvec(b = x1temp, beta = cmplx(1.0,0.0,dp), x = interm, alpha = cmplx(0.0,0.0,dp))
-        ! call zgemv('n', size(S,1), size(S,2), cmplx(1.0,0.0,dp), S, size(S,1), &
-                ! x1, 1, cmplx(0.0,0.0,dp), interm, 1)
-
                 
         ! Step 2: y1 <- alpha*y1 + interm = alpha*y1 + S*x1
         
@@ -1335,19 +1288,11 @@ module robin_tree_module
         ! Step 3: y2 <- alpha*y2 - nu*D*interm = alpha*y2 - nu*D*S*x1
         
         call D%invvec(b = interm, beta = -nu, x = y2temp, alpha = alpha)
-        
-        ! call zgemv('n', size(D,1), size(D,2), -nu, D, size(D,1), &
-                ! interm, 1, alpha, y2, 1)
 
-        
         ! Step 4: interm <- D*x2
         
         call D%invvec(b = x2temp, beta = cmplx(1.0,0.0,dp), x = interm, alpha = cmplx(0.0,0.0,dp))
-            
-        ! call zgemv('n', size(D,1), size(D,2), cmplx(1.0,0.0,dp), D, size(D,1), &
-                ! x2, 1, cmplx(0.0,0.0,dp), interm, 1)
-
-                
+           
         ! Step 5: y2 <- y2 + interm = alpha*y2 - nu*D*S*x1 + D*x2
         y2temp = y2temp + interm
 
@@ -1355,11 +1300,6 @@ module robin_tree_module
         ! Step 6: interm <- S*interm = S*D*x2
         
         call S%invvec(b = interm, beta = cmplx(1.0,0.0,dp))
-        
-        ! interm2 = interm
-        ! call zgemv('n', size(S,1), size(S,2), cmplx(1.0,0.0,dp), S, size(S,1), &
-                ! interm2, 1, cmplx(0.0,0.0,dp), interm, 1)
-
                 
         ! Step 7: y1 <- y1 - nu*interm = alpha*x1 + S*x1 - nu*S*D*x2
         
@@ -1370,9 +1310,6 @@ module robin_tree_module
         ! Step 8: y2 <- y2 + nu^2*D*interm
         
         call D%invvec(b = interm, beta = nu*nu, x = y2temp, alpha = cmplx(1.0,0.0,dp))
-        
-        ! call zgemv('n', size(D,1), size(D,2), nu*nu, D, size(D,1), &
-                ! interm, 1, cmplx(1.0,0.0,dp), y2, 1)
 
         ! Set outputs
         y1 = y1temp(:,1)
@@ -1442,10 +1379,6 @@ module robin_tree_module
         widths = 0.0d0
         
         widths(1:d) = node%box(2,1:d) - node%box(1,1:d)
-        
-        ! do j = 1,d
-            ! widths(j) = box_in(2,j) - box_in(1,j)
-        ! end do
         
         ! Find index of longest direction, along which to cut
         edge = maxloc(widths,1)
