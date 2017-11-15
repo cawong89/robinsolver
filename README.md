@@ -23,6 +23,7 @@ There is currently no makefile. Use your Fortran compiler to compile object file
 in order:
 
     derived_type_module.f90
+    factorization_module.f90
     time_module.f90
     fd_module.f90
     local_solver_module.f90
